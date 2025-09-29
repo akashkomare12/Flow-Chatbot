@@ -88,7 +88,6 @@ FLOW-CHATBOT/
 
     ```env
     OPENAI_API_KEY="YOUR_OPENAI_API_KEY"
-    SECRET_KEY="A_STRONG_RANDOM_SECRET_KEY"
     ```
 
 #### Running the Application
