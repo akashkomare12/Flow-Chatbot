@@ -1,0 +1,4 @@
+venv/
+test_rag.py
+__pycache__/
+vector_store/

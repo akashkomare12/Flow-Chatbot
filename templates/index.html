@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="homeScreen">
+    <div class="header">
+        <h1>🤖 Chatbot Assignment</h1>
+        <p>Choose your preferred chat mode to get started</p>
+    </div>
+
+    <div class="mode-selection">
+        <div class="mode-card" id="flowMode">
+            <div class="mode-icon">🔀</div>
+            <h2>Flow Mode</h2>
+            <p>Guided conversation with step-by-step questions. Perfect for structured data collection and customer support.</p>
+            <button class="btn">Start Flow Chat</button>
+        </div>
+
+        <div class="mode-card" id="ragMode">
+            <div class="mode-icon">📚</div>
+            <h2>RAG Mode</h2>
+            <p>Ask questions about documents using Retrieval-Augmented Generation. Get AI-powered answers based on document content.</p>
+            <button class="btn">Start RAG Chat</button>
+        </div>
+    </div>
+</div>
+
+<!-- Flow Chat Interface -->
+<div id="flowChat" class="chat-container" style="display: none;">
+    <div class="chat-header">
+        <h2>Flow Chatbot</h2>
+        <p>Guided Conversation</p>
+        <div class="progress-bar">
+            <div class="progress" style="width: 0%"></div>
+        </div>
+        <div class="step-info">Step 0 of 5</div>
+    </div>
+    
+    <div class="chat-messages" id="flowMessages"></div>
+    
+    <div class="chat-input">
+        <div class="input-group">
+            <input type="text" id="flowInput" placeholder="Type your answer here...">
+            <button id="sendFlowMessage">Send</button>
+        </div>
+        <div id="flowError" class="error" style="display: none;"></div>
+        <button id="backToHome" class="btn back-btn">Back to Home</button>
+    </div>
+</div>
+
+<!-- RAG Chat Interface -->
+<div id="ragChat" class="chat-container" style="display: none;">
+    <div class="chat-header">
+        <h2>RAG Chatbot</h2>
+        <p>Document-Based Questions</p>
+    </div>
+    
+    <div class="chat-messages" id="ragMessages"></div>
+    
+    <div class="chat-input">
+        <div class="input-group">
+            <input type="text" id="ragInput" placeholder="Ask a question about the documents...">
+            <button id="sendRagMessage">Send</button>
+        </div>
+        <button id="backToHomeRag" class="btn back-btn">Back to Home</button>
+    </div>
+</div>
+{% endblock %}
