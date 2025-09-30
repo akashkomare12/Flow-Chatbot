@@ -157,8 +157,8 @@ class ChatInterface {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: message,
-                    history: [] // In a real app, you might want to maintain chat history
+                    message: message
+                    // History is now handled by LangChain memory system
                 })
             });
 
@@ -257,9 +257,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentPath = window.location.pathname;
     
     if (currentPath === '/flow-chat') {
-        chatInterface.initializeFlowChat(); // <--- Correct initialization
+        chatInterface.initializeFlowChat();
     } else if (currentPath === '/rag-chat') {
-        chatInterface.initializeRagChat(); // <--- Correct initialization
+        chatInterface.initializeRagChat();
     }
     // If on home page ('/'), no additional initialization needed
 });

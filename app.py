@@ -7,6 +7,7 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders import TextLoader
 from langchain.docstore.document import Document
+from langchain.memory import ConversationBufferWindowMemory
 import json
 import re
 
@@ -126,7 +127,7 @@ class FlowChatbot:
         summary += "Thank you for providing this information! We'll get back to you soon."
         return summary
 
-# RAG chatbot logic
+# RAG chatbot with memory
 class RAGChatbot:
     def __init__(self):
         try:
@@ -134,12 +135,15 @@ class RAGChatbot:
                 persist_directory=persist_directory,
                 embedding_function=embeddings
             )
-            print("RAG chatbot initialized successfully")
+            # Initialize memory to remember last 3 conversations
+            self.memory = ConversationBufferWindowMemory(k=3, return_messages=True)
+            print("RAG chatbot with memory initialized successfully")
         except Exception as e:
             print(f"Error initializing RAG chatbot: {str(e)}")
             self.vector_store = None
+            self.memory = None
     
-    def get_response(self, query, chat_history=[]):
+    def get_response(self, query):
         try:
             if not self.vector_store:
                 return "I apologize, but the document system is not properly initialized. Please try again later."
@@ -155,31 +159,49 @@ class RAGChatbot:
             
             context = "\n\n".join([doc.page_content for doc in docs])
             
+            # Get conversation history from memory
+            memory_variables = self.memory.load_memory_variables({})
+            chat_history = memory_variables.get('history', [])
+            
+            # Format chat history for context
+            history_context = ""
+            if chat_history:
+                history_context = "\n\nPrevious conversation:\n"
+                for msg in chat_history[-6:]:  # Last 3 exchanges (user + bot)
+                    role = "Human" if msg.type == "human" else "Assistant"
+                    history_context += f"{role}: {msg.content}\n"
+            
             # Print first 200 chars of context for debugging
             print(f"Context sample: {context[:200]}...")
             
-            # Create prompt with context
-            prompt = f"""Based on the following context from company documents, please answer the user's question. If the context doesn't contain relevant information, clearly state that the information is not available in the company documents.
+            # Create enhanced prompt with context and memory
+            prompt = f"""Based on the following context from company documents and our previous conversation, please answer the user's question.
 
-Context:
+Company Documents Context:
 {context}
+{history_context}
 
-User Question: {query}
+Current User Question: {query}
 
-Please provide a helpful and accurate answer based only on the context provided:"""
+Please provide a helpful and accurate answer based on the company documents and our conversation history:"""
             
             # Generate response using OpenAI
             response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a helpful HR assistant that answers questions based on the provided company documents. If the information is not in the documents, say so clearly."},
+                    {"role": "system", "content": "You are a helpful HR assistant that answers questions based on the provided company documents and conversation history. "},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=500,
                 temperature=0.7
             )
             
-            return response.choices[0].message.content.strip()
+            answer = response.choices[0].message.content.strip()
+            
+            # Save conversation to memory
+            self.memory.save_context({"input": query}, {"output": answer})
+            
+            return answer
         
         except Exception as e:
             print(f"Error in RAG response: {str(e)}")
@@ -249,7 +271,6 @@ def rag_chat_api():
     global rag_bot
     data = request.get_json()
     user_message = data.get('message', '')
-    chat_history = data.get('history', [])
     
     if not user_message.strip():
         return jsonify({'error': 'Message cannot be empty'})
@@ -262,7 +283,7 @@ def rag_chat_api():
         except:
             return jsonify({'error': 'RAG system is not initialized. Please restart the application.'})
     
-    response = rag_bot.get_response(user_message, chat_history)
+    response = rag_bot.get_response(user_message)
     return jsonify({'response': response})
 
 @app.route('/api/debug/rag')
@@ -273,7 +294,8 @@ def debug_rag():
         debug_info = {
             'vector_store_exists': os.path.exists(persist_directory),
             'rag_bot_initialized': rag_bot is not None,
-            'vector_store_available': rag_bot.vector_store is not None if rag_bot else False
+            'vector_store_available': rag_bot.vector_store is not None if rag_bot else False,
+            'memory_initialized': rag_bot.memory is not None if rag_bot else False
         }
         
         if rag_bot and rag_bot.vector_store:
